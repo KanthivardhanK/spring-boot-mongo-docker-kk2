@@ -80,7 +80,7 @@ spec:
                key: password
          volumeMounts:
          - name: mongodb-pvc
-           mountPath: /data/db
+           mountPath: "/tmp/mongodata"
 ---
 apiVersion: v1
 kind: Service
