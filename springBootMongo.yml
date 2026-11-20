@@ -45,13 +45,13 @@ spec:
          - name: MONGO_INITDB_ROOT_USERNAME
            valueFrom:
              configMapKeyRef:
-               name: springappconfigmap
-               key: username
+               name: springappconfig
+               key: db_username
          - name: MONGO_INITDB_ROOT_PASSWORD
            valueFrom:
              secretKeyRef:
-               name: springappsecrets
-               key: password
+               name: springappsecret
+               key: db_password
          volumeMounts:
          - name: mongodb-pvc
            mountPath: /data/db
@@ -94,13 +94,13 @@ spec:
         - name: MONGO_DB_USERNAME
           valueFrom:
             configMapKeyRef:
-              name: springappconfigmap
-              key: username
+              name: springappconfig
+              key: db_username
         - name: MONGO_DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: springappsecrets
-              key: password
+              name: springappsecret
+              key: db_password
         - name: MONGO_DB_HOSTNAME
           value: mongo
 ---
