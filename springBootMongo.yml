@@ -1,4 +1,3 @@
-vi secret.yaml
 apiVersion: v1
 kind: Secret
 metadata:
