@@ -1,48 +1,71 @@
+vi secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: springappsecret
+  namespace: prod
+type: Opaque
+stringData:
+  db_password: devdb123
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: springappconfig
+  namespace: prod
+data:
+  db_username: devdb
+---
+# Mongo db pod with volumes(HostPath)
 apiVersion: apps/v1
 kind: ReplicaSet
-metadata: 
-  name: mongodb
+metadata:
+  name: mongodbrs
 spec:
-  replicas: 1
-  selector: 
+  selector:
     matchLabels:
       app: mongodb
   template:
-    metadata:
-      labels:
-        app: mongodb
-    spec:
-      containers:
-      - name: mongocon
-        image: mongo:8.0.9-noble
-        ports:
-        - containerPort: 27017
-        env:
-        - name: MONGO_INITDB_ROOT_USERNAME
-          value: devdb
-        - name: MONGO_INITDB_ROOT_PASSWORD
-          value: devdb@123
-        volumeMounts:
-        - name: mongovol
-          mountPath: /data/db
-      volumes:
-      - name: mongovol
-        hostPath:
-          path: /mongobkp
+     metadata:
+       name: mongodbpod
+       labels:
+         app: mongodb
+     spec:
+       volumes:
+       - name: mongodb-pvc
+         persistentVolumeClaim:
+           claimName: pvc-hostpath
+       containers:
+       - name: mongodbcontainer
+         image: mongo:7.0
+         ports:
+         - containerPort: 27017
+         env:
+         - name: MONGO_INITDB_ROOT_USERNAME
+           valueFrom:
+             configMapKeyRef:
+               name: springappconfigmap
+               key: username
+         - name: MONGO_INITDB_ROOT_PASSWORD
+           valueFrom:
+             secretKeyRef:
+               name: springappsecrets
+               key: password
+         volumeMounts:
+         - name: mongodb-pvc
+           mountPath: /data/db
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: mongosvc
-  namespace: test-ns
+  name: mongo
 spec:
   type: ClusterIP
   selector:
     app: mongodb
   ports:
-    - port: 27017
-      targetPort: 27017
----
+  - port: 27017
+    targetPort: 27017
 ## Spring Boot App
 apiVersion: apps/v1
 kind: Deployment
@@ -90,53 +113,3 @@ spec:
     targetPort: 8080
   type: NodePort
 ---
-# Mongo db pod with volumes(HostPath)
-apiVersion: apps/v1
-kind: ReplicaSet
-metadata:
-  name: mongodbrs
-spec:
-  selector:
-    matchLabels:
-      app: mongodb
-  template:
-     metadata:
-       name: mongodbpod
-       labels:
-         app: mongodb
-     spec:
-       volumes:
-       - name: mongodb-pvc
-         persistentVolumeClaim:
-           claimName: pvc-hostpath
-       containers:
-       - name: mongodbcontainer
-         image: mongo
-         ports:
-         - containerPort: 27017
-         env:
-         - name: MONGO_INITDB_ROOT_USERNAME
-           valueFrom:
-             configMapKeyRef:
-               name: springappconfigmap
-               key: username
-         - name: MONGO_INITDB_ROOT_PASSWORD
-           valueFrom:
-             secretKeyRef:
-               name: springappsecrets
-               key: password
-         volumeMounts:
-         - name: mongodb-pvc
-           mountPath: /data/db
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: mongo
-spec:
-  type: ClusterIP
-  selector:
-    app: mongodb
-  ports:
-  - port: 27017
-    targetPort: 27017
